@@ -1,0 +1,19 @@
+{
+  "name": "derrieuxanalodor",
+  "version": "1.0.0",
+  "description": "Le Data Access Object pour les crades",
+  "main": "DAO.js",
+  "scripts": {
+    "watch": "nodemon DAO.js"
+  },
+  "author": "Les 4 Fantastiques",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "mongodb": "^3.6.6",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
