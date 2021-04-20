@@ -1,3 +1,5 @@
+const { ObjectID } = require('bson')
+
 require('dotenv').config({ path : './env' })
 
 class DAO {
@@ -73,38 +75,44 @@ class DAO {
 
 exports.MongoDB = class MongoDB extends DAO {
     #MongoClient
-    #assert
     #db_file
 
     constructor(db_path) {
         super(db_path)
         this.#db_file = db_path
         this.#MongoClient = require('mongodb').MongoClient
-        this.#assert = require('assert')
     }
 
-    #openDB() {
-        
-    }
-
-    #closeDB() {
-    }
 
     getAll(target, callback){
         let mc = this.#MongoClient;
         let db_path = this.#db_file;
 
         mc.connect(db_path, function(err, client) {
-            
+        let db = client.db();
+
+        db.collection(target).find().toArray(function(err,docs){
+            callback(docs);
+        });
+        
+        client.close();
+        })
+    }
+
+
+
+    getById(target, id, callback){
+        let mc = this.#MongoClient;
+        let db_path = this.#db_file;
+
+        mc.connect(db_path, function(err, client) {
            let db = client.db();
 
-           let cursor = db.collection(target).find({});
+           db.collection(target).findOne({ "_id" : ObjectID(id) }, function(err, doc) {
+            callback(doc);
+           })
 
-            cursor.forEach(doc=>{
-                callback(JSON.stringify(doc, null, 4));
-            })
-
-            client.close();
+           client.close();
         })
     }
 }
