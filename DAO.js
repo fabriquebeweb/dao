@@ -1,10 +1,10 @@
 require('dotenv').config({ path : './env' })
 
 class DAO {
-    #dbFile;
+    #db_file;
 
-    constructor (dbPath) {
-        this.#dbFile = dbPath;
+    constructor (db_path) {
+        this.#db_file = db_path;
     }
 
     /**
@@ -72,13 +72,13 @@ class DAO {
 }
 
 exports.MongoDB = class MongoDB extends DAO {
-    constructor(dbPath) {
-        super(dbPath)
+    constructor(db_path) {
+        super(db_path)
     }
 }
 
 exports.SQLite = class SQLite extends DAO {
-    constructor(dbPath) {
-        super(dbPath)
+    constructor(db_path) {
+        super(db_path)
     }
 }
