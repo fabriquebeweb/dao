@@ -1,14 +1,23 @@
 require('dotenv').config({ path : './env' })
 
 class DAO {
+    #dbFile;
+
     constructor (dbPath) {
-        this.dbFile = dbPath;
+        this.#dbFile = dbPath;
     }
 
     /**
      * Cette méthode ouvre une connection entre l'objet et la BDD
      */
-    openDB(){
+    #openDB(){
+
+    }
+
+    /**
+     * Cette méthode ferme la connection entre l'objet et la BDD
+     */
+    #closeDB(){
 
     }
 
