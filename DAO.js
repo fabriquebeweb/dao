@@ -83,7 +83,6 @@ exports.MongoDB = class MongoDB extends DAO {
         this.#MongoClient = require('mongodb').MongoClient
     }
 
-
     getAll(target, callback){
         let mc = this.#MongoClient;
         let db_path = this.#db_file;
@@ -99,8 +98,6 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-
-
     getById(target, id, callback){
         let mc = this.#MongoClient;
         let db_path = this.#db_file;
@@ -114,6 +111,23 @@ exports.MongoDB = class MongoDB extends DAO {
 
            client.close();
         })
+    }
+
+    create(target, element, callback){
+        let mc = this.#MongoClient;
+        let db_path = this.#db_file;
+
+        mc.connect(db_path, function(err, client) {
+           let db = client.db();
+
+           db.collection(target).insertOne(element);
+
+           client.close();
+        })
+    }
+
+    update(target, element, callback){
+
     }
 }
 
