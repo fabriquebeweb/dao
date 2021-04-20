@@ -1,10 +1,10 @@
 require('dotenv').config({ path : './env' })
 
 class DAO {
-    #db_file;
+    #db_file
 
     constructor (db_path) {
-        this.#db_file = db_path;
+        this.#db_file = db_path
     }
 
     /**
@@ -72,13 +72,36 @@ class DAO {
 }
 
 exports.MongoDB = class MongoDB extends DAO {
+    #MongoClient
+    #assert
+    #db_file
+
     constructor(db_path) {
         super(db_path)
+        this.#db_file = db_path
+        this.#MongoClient = require('mongodb').MongoClient
+        // this.#assert = require('assert')
+    }
+
+    openDB() {
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
+            //this.#assert.equal(null, err)
+            console.log(this.#MongoClient)
+            //client.close()
+        })
+    }
+
+    #closeDB() {
     }
 }
 
 exports.SQLite = class SQLite extends DAO {
     constructor(db_path) {
         super(db_path)
+        this.sqlite = require('sqlite3').verbose()
+    }
+
+    openDB() {
+        this.db = new sqlite.Database(':memory:')
     }
 }
