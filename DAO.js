@@ -80,18 +80,32 @@ exports.MongoDB = class MongoDB extends DAO {
         super(db_path)
         this.#db_file = db_path
         this.#MongoClient = require('mongodb').MongoClient
-        // this.#assert = require('assert')
+        this.#assert = require('assert')
     }
 
-    openDB() {
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
-            //this.#assert.equal(null, err)
-            console.log(this.#MongoClient)
-            //client.close()
-        })
+    #openDB() {
+        
     }
 
     #closeDB() {
+    }
+
+    getAll(target, callback){
+        let mc = this.#MongoClient;
+        let db_path = this.#db_file;
+
+        mc.connect(db_path, function(err, client) {
+            
+           let db = client.db();
+
+           let cursor = db.collection(target).find({});
+
+            cursor.forEach(doc=>{
+                callback(JSON.stringify(doc, null, 4));
+            })
+
+            client.close();
+        })
     }
 }
 
