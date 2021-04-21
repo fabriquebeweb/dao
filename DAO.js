@@ -14,6 +14,14 @@ class DAO {
     #open() {}
 
     /**
+     * Inssèrt un élément dans une table/collection
+     * @param {*} target La table/collection dans laquelle insérer l'élément
+     * @param {*} element L'élément a insérer
+     * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
+     */
+    create(target, element, callback) {}
+
+    /**
      * Récupère tout les éléments d'une table/collection
      * @param {*} target La table/collection à récupérer
      * @param {*} callback Le traitement a effectuer sur la donnée
@@ -27,14 +35,6 @@ class DAO {
      * @param {*} callback Le traitement a effectuer sur l'élément
      */
     getById(target, id, callback) {}
-
-    /**
-     * Inssèrt un élément dans une table/collection
-     * @param {*} target La table/collection dans laquelle insérer l'élément
-     * @param {*} element L'élément a insérer
-     * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
-     */
-    create(target, element, callback) {}
 
     /**
      * Met à a jour un élément dans une table/collection
@@ -54,7 +54,80 @@ class DAO {
 }
 
 exports.MongoDB = class MongoDB extends DAO {
+    #MongoClient
+    #db_file
 
+    constructor(db_path) {
+        super(db_path)
+        this.#db_file = db_path
+        this.#MongoClient = require('mongodb').MongoClient
+    }
+
+    create(target, element, callback) {
+        let mc = this.#MongoClient
+        let db_path = this.#db_file
+
+        mc.connect(db_path, function(err, client) {
+           let db = client.db()
+
+           db.collection(target).insertOne(element)
+
+           client.close()
+        }
+    }
+
+    getAll(target, callback) {
+        let mc = this.#MongoClient
+        let db_path = this.#db_file
+
+        mc.connect(db_path, function(err, client) {
+            let db = client.db()
+
+            db.collection(target).find().toArray(function(err,docs) {
+                callback(docs)
+            })
+        
+            client.close()
+        })
+    }
+
+    getById(target, id, callback) {
+        let mc = this.#MongoClient
+        let db_path = this.#db_file
+
+        mc.connect(db_path, function(err, client) {
+           let db = client.db()
+
+           db.collection(target).findOne({ "_id" : ObjectID(id) }, function(err, doc) {
+            callback(doc)
+           })
+
+           client.close()
+        })
+    }
+
+    update(target,element,callback) {
+        let mc = this.#MongoClient
+        let db_path = this.#db_file
+    
+        mc.connect(db_path, function(err, client) {
+           let db = client.db()
+    
+            let query = { "_id" : ObjectID(element._id)}
+            let new_element = {}            
+            new_element =  Object.assign(new_element, element)
+            delete new_element["_id"]
+
+            let new_values = {$set : new_element}
+            
+            db.collection(target).updateOne(query, new_values, function(err,res) {
+                if(err) throw err
+                if (callback) callback(res)
+            })
+    
+           client.close()
+        })
+    }
 }
 
 exports.SQLite = class SQLite extends DAO {
