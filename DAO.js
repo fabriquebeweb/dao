@@ -60,9 +60,7 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     create(target, element, callback) {
-        let mc = this.#MongoClient
-
-        mc.connect(db_path, function(err, client) {
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
            let db = client.db()
 
            db.collection(target).insertOne(element)
@@ -72,9 +70,7 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     getAll(target, callback) {
-        let mc = this.#MongoClient
-
-        mc.connect(db_path, function(err, client) {
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
             let db = client.db()
 
             db.collection(target).find().toArray(function(err, docs) {
@@ -86,12 +82,12 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     getById(target, id, callback) {
-        let mc = this.#MongoClient
+        let { ObjectId } = require('bson');
 
-        mc.connect(db_path, function(err, client) {
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
            let db = client.db()
 
-           db.collection(target).findOne({ "_id" : ObjectID(id) }, function(err, doc) {
+           db.collection(target).findOne({ "_id" : ObjectId(id) }, function(err, doc) {
             callback(doc)
            })
 
@@ -99,13 +95,11 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-    update(target,element,callback) {
-        let mc = this.#MongoClient
-    
-        mc.connect(db_path, function(err, client) {
+    update(target, element, callback) {
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
            let db = client.db()
     
-            let query = { "_id" : ObjectID(element._id)}
+            let query = { "_id" : ObjectId(element._id)}
             let new_element = {}            
             new_element =  Object.assign(new_element, element)
             delete new_element["_id"]
@@ -120,7 +114,18 @@ exports.MongoDB = class MongoDB extends DAO {
            client.close()
         })
     }
+
+    delete(target, id, callback){
+        let { ObjectId } = require('bson');
+
+        this.#MongoClient.connect(this.#db_file, function(err, client) {
+            let db = client.db();
+            db.collection(target).deleteOne({ "_id" : ObjectId(id)})
+            client.close();
+        })
+    }
 }
+
 
 exports.SQLite = class SQLite extends DAO {
     constructor(db_path) {
@@ -175,7 +180,7 @@ exports.SQLite = class SQLite extends DAO {
                 values.push(`'${JSON.stringify(element[attr])}'`
                 )
             })
-            
+
             this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
         })
 
