@@ -126,8 +126,27 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-    update(target, element, callback){
+    update(target,element,callback){
+        let mc = this.#MongoClient;
+        let db_path = this.#db_file;
+    
+        mc.connect(db_path, function(err, client) {
+           let db = client.db();
+    
+            let query = { "_id" : ObjectID(element._id)}
+            let new_element = {}            
+            new_element =  Object.assign(new_element, element);
+            delete new_element["_id"];
 
+            let new_values = {$set : new_element}
+            
+            db.collection(target).updateOne(query,new_values, function(err,res){
+                if(err) throw err;
+                if (callback) callback(res);
+            })
+    
+           client.close();
+        })
     }
 }
 
