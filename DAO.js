@@ -3,6 +3,9 @@ require('dotenv').config({ path : './env' })
 class DAO {
     constructor (db_path) {
         this.db_path = db_path
+        if (this.constructor === DAO) {
+            throw new TypeError('Une Classe abstraite ne peut pas être instanciée')
+        }
     }
 
     /**
