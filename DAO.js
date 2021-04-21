@@ -96,6 +96,8 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     update(target, element, callback) {
+        let { ObjectId } = require('bson');
+
         this.#MongoClient.connect(this.#db_file, function(err, client) {
            let db = client.db()
     
