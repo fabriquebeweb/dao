@@ -128,7 +128,19 @@ exports.MongoDB = class MongoDB extends DAO {
            client.close()
         })
     }
+
+    delete(target, id, callback){
+        let mc = this.#MongoClient;
+        let db_path = this.#db_file;
+
+        mc.connect(db_path, function(err, client) {
+            let db = client.db();
+            db.collection(target).deleteOne({ "_id" : ObjectID(id)})
+            client.close();
+        })
+    }
 }
+
 
 exports.SQLite = class SQLite extends DAO {
     constructor(db_path) {
