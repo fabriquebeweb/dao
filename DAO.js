@@ -136,8 +136,7 @@ exports.MongoDB = class MongoDB extends DAO {
 
         mc.connect(db_path, function(err, client) {
             let db = client.db();
-            db.collection(target).deleteOne({ "_id" : ObjectID(id) }, function (err, collection) {
-            });
+            db.collection(target).deleteOne({ "_id" : ObjectID(id)})
             client.close();
         })
     }
