@@ -55,17 +55,15 @@ class DAO {
 
 exports.MongoDB = class MongoDB extends DAO {
     #MongoClient
-    #db_file
 
     constructor(db_path) {
         super(db_path)
-        this.#db_file = db_path
         this.#MongoClient = require('mongodb').MongoClient
     }
 
     create(target, element, callback) {
         
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
+        this.#MongoClient.connect(this.db_path, function(err, client) {
            if (err) throw err
            let db = client.db()
 
@@ -80,7 +78,7 @@ exports.MongoDB = class MongoDB extends DAO {
 
     getAll(target, callback) {
         
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
+        this.#MongoClient.connect(this.db_path, function(err, client) {
             if (err) throw err
             let db = client.db()
 
@@ -96,7 +94,7 @@ exports.MongoDB = class MongoDB extends DAO {
     getById(target, id, callback) {
         let {ObjectId} = require('bson');
 
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
+        this.#MongoClient.connect(this.db_path, function(err, client) {
             if (err) throw err
            let db = client.db()
 
@@ -110,10 +108,11 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     update(target,element,callback) {
-    
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
+        let {ObjectId} = require('bson')
+
+        this.#MongoClient.connect(this.db_path, function(err, client) {
             if (err) throw err
-           let db = client.db()
+            let db = client.db()
     
             let query = { "_id" : ObjectId(element._id)}
             let new_element = {}            
@@ -134,7 +133,7 @@ exports.MongoDB = class MongoDB extends DAO {
     delete(target, id, callback){
         let {ObjectId} = require('bson');
 
-        this.#MongoClient.connect(this.#db_file, function(err, client) {
+        this.#MongoClient.connect(this.db_path, function(err, client) {
             if (err) throw err
             let db = client.db();
             db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(err,res){
