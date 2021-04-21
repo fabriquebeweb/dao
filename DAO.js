@@ -66,9 +66,13 @@ exports.MongoDB = class MongoDB extends DAO {
     create(target, element, callback) {
         
         this.#MongoClient.connect(this.#db_file, function(err, client) {
+           if (err) throw err
            let db = client.db()
 
-           db.collection(target).insertOne(element)
+           db.collection(target).insertOne(element,function(err,res){
+            if (err) throw err
+            if (callback) callback(res)
+           })
 
            client.close()
         })
@@ -77,9 +81,11 @@ exports.MongoDB = class MongoDB extends DAO {
     getAll(target, callback) {
         
         this.#MongoClient.connect(this.#db_file, function(err, client) {
+            if (err) throw err
             let db = client.db()
 
             db.collection(target).find().toArray(function(err,docs) {
+                if (err) throw err
                 callback(docs)
             })
         
@@ -91,9 +97,11 @@ exports.MongoDB = class MongoDB extends DAO {
         let {ObjectId} = require('bson');
 
         this.#MongoClient.connect(this.#db_file, function(err, client) {
+            if (err) throw err
            let db = client.db()
 
            db.collection(target).findOne({ "_id" : ObjectId(id) }, function(err, doc) {
+            if (err) throw err
             callback(doc)
            })
 
@@ -126,8 +134,12 @@ exports.MongoDB = class MongoDB extends DAO {
         let {ObjectId} = require('bson');
 
         this.#MongoClient.connect(this.#db_file, function(err, client) {
+            if (err) throw err
             let db = client.db();
-            db.collection(target).deleteOne({ "_id" : ObjectId(id)})
+            db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(err,res){
+                if (err) throw err
+                if (callback) callback(res)
+            })
             client.close();
         })
     }
