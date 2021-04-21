@@ -3,9 +3,7 @@ require('dotenv').config({ path : './env' })
 class DAO {
     constructor (db_path) {
         this.db_path = db_path
-        if (this.constructor === DAO) {
-            throw new TypeError('Une Classe abstraite ne peut pas être instanciée')
-        }
+        if (this.constructor === DAO) throw new TypeError('Une Classe abstraite ne peut pas être instanciée')
     }
 
     /**
@@ -55,17 +53,14 @@ class DAO {
 
 exports.MongoDB = class MongoDB extends DAO {
     #MongoClient
-    #db_file
 
     constructor(db_path) {
         super(db_path)
-        this.#db_file = db_path
         this.#MongoClient = require('mongodb').MongoClient
     }
 
     create(target, element, callback) {
         let mc = this.#MongoClient
-        let db_path = this.#db_file
 
         mc.connect(db_path, function(err, client) {
            let db = client.db()
@@ -78,12 +73,11 @@ exports.MongoDB = class MongoDB extends DAO {
 
     getAll(target, callback) {
         let mc = this.#MongoClient
-        let db_path = this.#db_file
 
         mc.connect(db_path, function(err, client) {
             let db = client.db()
 
-            db.collection(target).find().toArray(function(err,docs) {
+            db.collection(target).find().toArray(function(err, docs) {
                 callback(docs)
             })
         
@@ -93,7 +87,6 @@ exports.MongoDB = class MongoDB extends DAO {
 
     getById(target, id, callback) {
         let mc = this.#MongoClient
-        let db_path = this.#db_file
 
         mc.connect(db_path, function(err, client) {
            let db = client.db()
@@ -108,7 +101,6 @@ exports.MongoDB = class MongoDB extends DAO {
 
     update(target,element,callback) {
         let mc = this.#MongoClient
-        let db_path = this.#db_file
     
         mc.connect(db_path, function(err, client) {
            let db = client.db()
@@ -142,80 +134,102 @@ exports.SQLite = class SQLite extends DAO {
 
     seed(target, elements) {
         this.#open()
+
         this.db.serialize(() => {
             this.db.run(`DROP TABLE if exists ${target}`)
+
             const attributes = new Array
             elements.forEach((element) => {
                 for (let attr in element) if (!attributes.includes(attr)) attributes.push(attr)
             })
+
             const seed = new Array
             attributes.forEach((attr, i) => {
-                seed.push((typeof elements[0][attr] === 'string') ? `${attr} TEXT` : `${attr} INTEGER`)
+                seed.push(`${attr} TEXT`)
             })
+
             this.db.run(`CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT,${seed.join(',')})`)
             
             elements.forEach((element) => {
                 let values = new Array
                 attributes.forEach((attr) => {
-                    values.push((typeof element[attr] === 'string') ? `'${element[attr]}'` : `${element[attr]}`)
+                    values.push(`'${JSON.stringify(element[attr])}'`)
                 })
+
                 this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
             })
         })
+
         this.db.close()
     }
 
     create(target, element) {
         this.#open()
+
         this.db.serialize(() => {
-            const attributes = new Array; const values = new Array
+            const attributes = new Array
             for (let attr in element) attributes.push(attr)
+
+            const values = new Array
             attributes.forEach((attr) => {
-                values.push((typeof element[attr] === 'string') ? `'${element[attr]}'` : `${element[attr]}`)
+                values.push(`'${JSON.stringify(element[attr])}'`
+                )
             })
+            
             this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
         })
+
         this.db.close()
     }
 
     getAll(target, callback) {
         this.#open()
+
         this.db.serialize(() => {
-            this.db.all(`SELECT * FROM ${target}`, (err, result) => {
-                callback(result)
+            this.db.all(`SELECT * FROM ${target}`, (err, results) => {
+                results.forEach((result) => {
+                    for (let attr in result) result[attr] = JSON.parse(result[attr])
+                })
+                callback(results)
             })
         })
+
         this.db.close()
     }
 
     getById(target, id, callback) {
         this.#open()
+
         this.db.serialize(() => {
             this.db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (err, result) => {
+                for (let attr in result) result[attr] = JSON.parse(result[attr])
                 callback(result)
             })
         })
+
         this.db.close()
     }
 
     update(target, element) {
         this.#open()
+
         this.db.serialize(() => {
             const update = new Array
-            for (const attribute in element) update.push((typeof element[attribute] === 'string') ? `${attribute} = '${element[attribute]}'` : `${attribute} = ${element[attribute]}`)
-            console.log(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`)
-            this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`, err => {
-                console.log(err)
-            })
+            for (let attr in element) update.push(`${attr} = '${JSON.stringify(element[attr])}'`)
+
+            this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,)
         })
+
         this.db.close()
     }
 
     delete(target, id) {
         this.#open()
+
         this.db.serialize(() => {
             this.db.run(`DELETE FROM ${target} WHERE id = ${id}`)
         })
+
         this.db.close()
     }
 }
