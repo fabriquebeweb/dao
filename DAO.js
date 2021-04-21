@@ -68,7 +68,6 @@ exports.SQLite = class SQLite extends DAO {
         this.#open()
         this.db.serialize(() => {
             this.db.run(`DROP TABLE if exists ${target}`)
-
             const attributes = new Array
             elements.forEach((element) => {
                 for (let attr in element) if (!attributes.includes(attr)) attributes.push(attr)
@@ -84,9 +83,21 @@ exports.SQLite = class SQLite extends DAO {
                 attributes.forEach((attr) => {
                     values.push((typeof element[attr] === 'string') ? `'${element[attr]}'` : `${element[attr]}`)
                 })
-                console.log(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
                 this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
             })
+        })
+        this.db.close()
+    }
+
+    create(target, element) {
+        this.#open()
+        this.db.serialize(() => {
+            const attributes = new Array; const values = new Array
+            for (let attr in element) attributes.push(attr)
+            attributes.forEach((attr) => {
+                values.push((typeof element[attr] === 'string') ? `'${element[attr]}'` : `${element[attr]}`)
+            })
+            this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
         })
         this.db.close()
     }
@@ -115,9 +126,7 @@ exports.SQLite = class SQLite extends DAO {
         this.#open()
         this.db.serialize(() => {
             const update = new Array
-            for (const attribute in element) {
-                update.push((typeof element[attribute] === 'string') ? `${attribute} = '${element[attribute]}'` : `${attribute} = ${element[attribute]}`)
-            }
+            for (const attribute in element) update.push((typeof element[attribute] === 'string') ? `${attribute} = '${element[attribute]}'` : `${attribute} = ${element[attribute]}`)
             console.log(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`)
             this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`, err => {
                 console.log(err)
