@@ -112,6 +112,7 @@ exports.MongoDB = class MongoDB extends DAO {
     update(target,element,callback) {
     
         this.#MongoClient.connect(this.#db_file, function(err, client) {
+            if (err) throw err
            let db = client.db()
     
             let query = { "_id" : ObjectId(element._id)}
