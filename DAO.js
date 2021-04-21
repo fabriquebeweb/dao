@@ -73,7 +73,7 @@ exports.MongoDB = class MongoDB extends DAO {
            db.collection(target).insertOne(element)
 
            client.close()
-        }
+        })
     }
 
     getAll(target, callback) {
