@@ -5,6 +5,10 @@ class DAO {
 
     constructor (db_path) {
         this.#db_file = db_path;
+
+        if (this.constructor === DAO) {
+            throw new TypeError('Une class abstraite ne peut pas être instanciée');
+          }
     }
 
     /**
