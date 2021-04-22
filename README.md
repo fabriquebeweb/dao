@@ -1,5 +1,5 @@
 # PRÉSENTATION
-Le Data Access Object (DOA) est un modèle de programmation qui permet à un serveur de traiter des requêtes d'accès aux données de différentes Bases De Données (DB).
+Le Data Access Object (DAO) est un modèle de programmation qui permet à un serveur de traiter des requêtes d'accès aux données de différentes Bases De Données (DB).
 
 Lorsque le serveur reçoit des requêtes, le DAO s'occupe de les traduire avant de les envoyer au bon format, peu importe la DB choisie.
 
