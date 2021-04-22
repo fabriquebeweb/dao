@@ -59,57 +59,47 @@ exports.MongoDB = class MongoDB extends DAO {
         this.#MongoClient = require('mongodb').MongoClient
     }
 
-    create(target, element, callback) {
+    #connect(callback) {
         this.#MongoClient.connect(this.db_path, function(error, client) {
             if (error) throw error
-            let db = client.db()
-
-            db.collection(target).insertOne(element, function(error, res){
-                if (error) throw error
-                if (callback) callback(res)
-            })
-
+            callback(client.db())
             client.close()
         })
     }
 
-    getAll(target, callback) {
-        this.#MongoClient.connect(this.db_path, function(error, client) {
-            if (error) throw error
-            let db = client.db()
+    create(target, element, callback) {
+        this.#connect(db => {
+            db.collection(target).insertOne(element, function(error, res){
+                if (error) throw error
+                if (callback) callback(res)
+            })
+        })
+    }
 
+    getAll(target, callback) {
+        this.#connect(db => {
             db.collection(target).find().toArray(function(error, docs) {
                 if (error) throw error
                 callback(docs)
             })
-        
-            client.close()
         })
     }
 
     getById(target, id, callback) {
         let { ObjectId } = require('bson');
 
-        this.#MongoClient.connect(this.db_path, function(error, client) {
-            if (error) throw error
-            let db = client.db()
-
+        this.#connect(db => {
             db.collection(target).findOne({ "_id" : ObjectId(id) }, function(error, doc) {
                 if (error) throw error
                 callback(doc)
             })
-
-            client.close()
         })
     }
 
     update(target,element,callback) {
         let { ObjectId } = require('bson')
 
-        this.#MongoClient.connect(this.db_path, function(error, client) {
-            if (error) throw error
-            let db = client.db()
-    
+        this.#connect(db => {
             let query = { "_id" : ObjectId(element._id)}
             let new_element = {}            
             new_element =  Object.assign(new_element, element)
@@ -121,22 +111,17 @@ exports.MongoDB = class MongoDB extends DAO {
                 if(error) throw error
                 if (callback) callback(res)
             })
-    
-           client.close()
         })
     }
 
     delete(target, id, callback){
         let { ObjectId } = require('bson');
 
-        this.#MongoClient.connect(this.db_path, function(error, client) {
-            if (error) throw error
-            let db = client.db();
+        this.#connect(db => {
             db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(error, res){
                 if (error) throw error
                 if (callback) callback(res)
             })
-            client.close();
         })
     }
 }
