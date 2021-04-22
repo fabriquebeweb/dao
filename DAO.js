@@ -8,8 +8,9 @@ class DAO {
 
     /**
      * Cette méthode ouvre une connection entre l'objet et la BDD
+     * @param {*} callback Traitement à effectuer
      */
-    #open() {}
+    #connect(callback) {}
 
     /**
      * Inssèrt un élément dans une table/collection
@@ -263,78 +264,68 @@ exports.Redis = class Redis extends DAO {
         this.#Redis = require('redis')
     }
 
-    #open() {
+    #connect(callback) {
         this.db = this.#Redis.createClient(this.db_path)
         this.db.on('error', error => { throw error })
+        callback(this.db)
+        this.db.quit()
     }
 
     seed(target, elements) {
-        this.#open()
-
-        elements.forEach((element, i) => { element.id = i })
-        this.db.set(target, JSON.stringify(elements))
-
-        this.db.quit()
+        this.#connect(db => {
+            elements.forEach((element, i) => { element.id = i })
+            db.set(target, JSON.stringify(elements))    
+        })
     }
 
     create(target, element) {
-        this.#open()
-
-        this.db.get(target, (error, result) => {
-            const elements = JSON.parse(result)
-            element.id = Math.max(...elements.map(obj => obj.id)) + 1
-            elements.push(element)
-
-            this.db.set(target, JSON.stringify(elements))
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                element.id = Math.max(...elements.map(obj => obj.id)) + 1
+                elements.push(element)
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
         })
-
-        this.db.quit()
     }
 
     getAll(target, callback) {
-        this.#open()
-
-        this.db.get(target, (error, result) => {
-            callback(JSON.parse(result))
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                callback(JSON.parse(result))
+            })
         })
-
-        this.db.quit()
     }
 
     getById(target, id, callback) {
-        this.#open()
-
-        this.db.get(target, (error, result) => {
-            callback(JSON.parse(result).find(obj => obj.id === id))
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                callback(JSON.parse(result).find(obj => obj.id === id))
+            })    
         })
-
-        this.db.quit()
     }
 
-//     update(target, element) {
-//         this.#open()
-
-//         this.db.serialize(() => {
-//             const update = new Array
-//             for (let attr in element) update.push(`${attr} = '${JSON.stringify(element[attr])}'`)
-
-//             this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,)
-//         })
-
-//         this.db.quit()
-//     }
+    update(target, element) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                let e = elements.find(obj => obj.id === element.id)
+                elements[elements.indexOf(e)] = element
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
+        })
+    }
 
     delete(target, id) {
-        this.#open()
-
-        this.db.get(target, (error, result) => {
-            const elements = JSON.parse(result)
-            elements.splice(elements.indexOf(elements.find(obj => obj.id === id)), 1)
-            // console.log(elements)
-
-            this.db.set(target, JSON.stringify(elements))
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                elements.splice(elements.indexOf(elements.find(obj => obj.id === id)), 1)
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
         })
-
-        this.db.quit()
     }
 }
