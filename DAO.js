@@ -271,57 +271,45 @@ exports.Redis = class Redis extends DAO {
     seed(target, elements) {
         this.#open()
 
-        this.db.set(target, elements)
+        elements.forEach((element, i) => { element.id = i })
+        this.db.set(target, JSON.stringify(elements))
 
         this.db.quit()
     }
 
-//     create(target, element) {
-//         this.#open()
+    create(target, element) {
+        this.#open()
 
-//         this.db.serialize(() => {
-//             const attributes = new Array
-//             for (let attr in element) attributes.push(attr)
+        this.db.get(target, (error, result) => {
+            const elements = JSON.parse(result)
+            element.id = Math.max(...elements.map(obj => obj.id)) + 1
+            elements.push(element)
 
-//             const values = new Array
-//             attributes.forEach((attr) => {
-//                 values.push(`'${JSON.stringify(element[attr])}'`
-//                 )
-//             })
+            this.db.set(target, JSON.stringify(elements))
+        })
 
-//             this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
-//         })
+        this.db.quit()
+    }
 
-//         this.db.close()
-//     }
+    getAll(target, callback) {
+        this.#open()
 
-//     getAll(target, callback) {
-//         this.#open()
+        this.db.get(target, (error, result) => {
+            callback(JSON.parse(result))
+        })
 
-//         this.db.serialize(() => {
-//             this.db.all(`SELECT * FROM ${target}`, (err, results) => {
-//                 results.forEach((result) => {
-//                     for (let attr in result) result[attr] = JSON.parse(result[attr])
-//                 })
-//                 callback(results)
-//             })
-//         })
+        this.db.quit()
+    }
 
-//         this.db.close()
-//     }
+    getById(target, id, callback) {
+        this.#open()
 
-//     getById(target, id, callback) {
-//         this.#open()
+        this.db.get(target, (error, result) => {
+            callback(JSON.parse(result).find(obj => obj.id === id))
+        })
 
-//         this.db.serialize(() => {
-//             this.db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (err, result) => {
-//                 for (let attr in result) result[attr] = JSON.parse(result[attr])
-//                 callback(result)
-//             })
-//         })
-
-//         this.db.close()
-//     }
+        this.db.quit()
+    }
 
 //     update(target, element) {
 //         this.#open()
@@ -333,16 +321,20 @@ exports.Redis = class Redis extends DAO {
 //             this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,)
 //         })
 
-//         this.db.close()
+//         this.db.quit()
 //     }
 
-//     delete(target, id) {
-//         this.#open()
+    delete(target, id) {
+        this.#open()
 
-//         this.db.serialize(() => {
-//             this.db.run(`DELETE FROM ${target} WHERE id = ${id}`)
-//         })
+        this.db.get(target, (error, result) => {
+            const elements = JSON.parse(result)
+            elements.splice(elements.indexOf(elements.find(obj => obj.id === id)), 1)
+            // console.log(elements)
 
-//         this.db.close()
-//     }
+            this.db.set(target, JSON.stringify(elements))
+        })
+
+        this.db.quit()
+    }
 }
