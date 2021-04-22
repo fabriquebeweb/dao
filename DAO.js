@@ -52,66 +52,54 @@ class DAO {
 }
 
 exports.MongoDB = class MongoDB extends DAO {
-    #MongoClient
+    #MongoDB
 
     constructor(db_path) {
         super(db_path)
-        this.#MongoClient = require('mongodb').MongoClient
+        this.#MongoDB = require('mongodb').MongoClient
+    }
+
+    #connect(callback) {
+        this.#MongoDB.connect(this.db_path, function(error, client) {
+            if (error) throw error
+            callback(client.db())
+            client.close()
+        })
     }
 
     create(target, element, callback) {
-        
-        this.#MongoClient.connect(this.db_path, function(err, client) {
-           if (err) throw err
-           let db = client.db()
-
-           db.collection(target).insertOne(element,function(err,res){
-            if (err) throw err
-            if (callback) callback(res)
-           })
-
-           client.close()
+        this.#connect(db => {
+            db.collection(target).insertOne(element, function(error, res){
+                if (error) throw error
+                if (callback) callback(res)
+            })
         })
     }
 
     getAll(target, callback) {
-        
-        this.#MongoClient.connect(this.db_path, function(err, client) {
-            if (err) throw err
-            let db = client.db()
-
-            db.collection(target).find().toArray(function(err,docs) {
-                if (err) throw err
+        this.#connect(db => {
+            db.collection(target).find().toArray(function(error, docs) {
+                if (error) throw error
                 callback(docs)
             })
-        
-            client.close()
         })
     }
 
     getById(target, id, callback) {
         let { ObjectId } = require('bson');
 
-        this.#MongoClient.connect(this.db_path, function(err, client) {
-            if (err) throw err
-           let db = client.db()
-
-           db.collection(target).findOne({ "_id" : ObjectId(id) }, function(err, doc) {
-            if (err) throw err
-            callback(doc)
-           })
-
-           client.close()
+        this.#connect(db => {
+            db.collection(target).findOne({ "_id" : ObjectId(id) }, function(error, doc) {
+                if (error) throw error
+                callback(doc)
+            })
         })
     }
 
     update(target,element,callback) {
-        let {ObjectId} = require('bson')
+        let { ObjectId } = require('bson')
 
-        this.#MongoClient.connect(this.db_path, function(err, client) {
-            if (err) throw err
-            let db = client.db()
-    
+        this.#connect(db => {
             let query = { "_id" : ObjectId(element._id)}
             let new_element = {}            
             new_element =  Object.assign(new_element, element)
@@ -119,139 +107,137 @@ exports.MongoDB = class MongoDB extends DAO {
 
             let new_values = {$set : new_element}
             
-            db.collection(target).updateOne(query, new_values, function(err,res) {
-                if(err) throw err
+            db.collection(target).updateOne(query, new_values, function(error, res) {
+                if(error) throw error
                 if (callback) callback(res)
             })
-    
-           client.close()
         })
     }
 
     delete(target, id, callback){
         let { ObjectId } = require('bson');
 
-        this.#MongoClient.connect(this.db_path, function(err, client) {
-            if (err) throw err
-            let db = client.db();
-            db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(err,res){
-                if (err) throw err
+        this.#connect(db => {
+            db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(error, res){
+                if (error) throw error
                 if (callback) callback(res)
             })
-            client.close();
         })
     }
 }
 
 
 exports.SQLite = class SQLite extends DAO {
+    #SQLite
+
     constructor(db_path) {
         super(db_path)
-        this.sqlite = require('sqlite3')
+        this.#SQLite = require('sqlite3')
     }
 
-    #open() {
-        this.db = new this.sqlite.Database(this.db_path)
+    #connect(callback) {
+        this.db = new this.#SQLite.Database(this.db_path)
+        callback(this.db)
+        this.db.close()
     }
 
     seed(target, elements) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.run(`DROP TABLE if exists ${target}`)
-
-            const attributes = new Array
-            elements.forEach((element) => {
-                for (let attr in element) if (!attributes.includes(attr)) attributes.push(attr)
-            })
-
-            const seed = new Array
-            attributes.forEach((attr, i) => {
-                seed.push(`${attr} TEXT`)
-            })
-
-            this.db.run(`CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT,${seed.join(',')})`)
-            
-            elements.forEach((element) => {
-                let values = new Array
-                attributes.forEach((attr) => {
-                    values.push(`'${JSON.stringify(element[attr])}'`)
+        this.#connect(db => {
+            db.serialize(() => {
+                db.run(
+                    `DROP TABLE if exists ${target}`,
+                    (error) => { if (error) throw error }
+                )
+    
+                const attributes = new Array
+                elements.forEach((element) => {
+                    for (let attribute in element) if (!attributes.includes(attribute)) attributes.push(attribute)
                 })
+    
+                const seed = ['']
+                attributes.forEach(attribute => seed.push(`${attribute} TEXT`))
 
-                this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
-            })
+                db.run(
+                    `CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
+                    (error) => { if (error) throw error }
+                )
+                
+                elements.forEach((element) => {
+                    let values = new Array
+                    attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+                    db.run(
+                        `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                        (error) => { if (error) throw error }
+                    )
+                })
+            })    
         })
-
-        this.db.close()
     }
 
     create(target, element) {
-        this.#open()
-
-        this.db.serialize(() => {
-            const attributes = new Array
-            for (let attr in element) attributes.push(attr)
-
-            const values = new Array
-            attributes.forEach((attr) => {
-                values.push(`'${JSON.stringify(element[attr])}'`
+        this.#connect(db => {
+            db.serialize(() => {
+                const attributes = new Array
+                for (let attribute in element) attributes.push(attribute)
+    
+                const values = new Array
+                attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+    
+                db.run(
+                    `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                    (error) => { if (error) throw error }
                 )
-            })
-
-            this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
+            })    
         })
-
-        this.db.close()
     }
 
     getAll(target, callback) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.all(`SELECT * FROM ${target}`, (err, results) => {
-                results.forEach((result) => {
-                    for (let attr in result) result[attr] = JSON.parse(result[attr])
+        this.#connect(db => {
+            db.serialize(() => {
+                db.all(`SELECT * FROM ${target}`, (error, results) => {
+                    if (error) throw error
+                    results.forEach(result => {
+                        for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                    })
+                    callback(results)
                 })
-                callback(results)
             })
         })
-
-        this.db.close()
     }
 
     getById(target, id, callback) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (err, result) => {
-                for (let attr in result) result[attr] = JSON.parse(result[attr])
-                callback(result)
-            })
+        this.#connect(db => {
+            db.serialize(() => {
+                db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (error, result) => {
+                    if (error) throw error
+                    for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                    callback(result)
+                })
+            })    
         })
-
-        this.db.close()
     }
 
     update(target, element) {
-        this.#open()
-
-        this.db.serialize(() => {
-            const update = new Array
-            for (let attr in element) update.push(`${attr} = '${JSON.stringify(element[attr])}'`)
-
-            this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,)
+        this.#connect(db => {
+            db.serialize(() => {
+                const update = new Array
+                for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
+                db.run(
+                    `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
+                    (error) => { if (error) throw error }
+                )
+            })    
         })
-
-        this.db.close()
     }
 
     delete(target, id) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.run(`DELETE FROM ${target} WHERE id = ${id}`)
+        this.#connect(db => {
+            db.serialize(() => {
+                db.run(
+                    `DELETE FROM ${target} WHERE id = ${id}`,
+                    (error) => { if (error) throw error }
+                )
+            })
         })
-
-        this.db.close()
     }
 }
