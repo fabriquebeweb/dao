@@ -143,7 +143,6 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 }
 
-
 exports.SQLite = class SQLite extends DAO {
     constructor(db_path) {
         super(db_path)
@@ -254,4 +253,96 @@ exports.SQLite = class SQLite extends DAO {
 
         this.db.close()
     }
+}
+
+exports.Redis = class Redis extends DAO {
+    #Redis
+
+    constructor(db_path) {
+        super(db_path)
+        this.#Redis = require('redis')
+    }
+
+    #open() {
+        this.db = this.#Redis.createClient(this.db_path)
+        this.db.on('error', error => { throw error })
+    }
+
+    seed(target, elements) {
+        this.#open()
+
+        this.db.set(target, elements)
+
+        this.db.quit()
+    }
+
+//     create(target, element) {
+//         this.#open()
+
+//         this.db.serialize(() => {
+//             const attributes = new Array
+//             for (let attr in element) attributes.push(attr)
+
+//             const values = new Array
+//             attributes.forEach((attr) => {
+//                 values.push(`'${JSON.stringify(element[attr])}'`
+//                 )
+//             })
+
+//             this.db.run(`INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`)
+//         })
+
+//         this.db.close()
+//     }
+
+//     getAll(target, callback) {
+//         this.#open()
+
+//         this.db.serialize(() => {
+//             this.db.all(`SELECT * FROM ${target}`, (err, results) => {
+//                 results.forEach((result) => {
+//                     for (let attr in result) result[attr] = JSON.parse(result[attr])
+//                 })
+//                 callback(results)
+//             })
+//         })
+
+//         this.db.close()
+//     }
+
+//     getById(target, id, callback) {
+//         this.#open()
+
+//         this.db.serialize(() => {
+//             this.db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (err, result) => {
+//                 for (let attr in result) result[attr] = JSON.parse(result[attr])
+//                 callback(result)
+//             })
+//         })
+
+//         this.db.close()
+//     }
+
+//     update(target, element) {
+//         this.#open()
+
+//         this.db.serialize(() => {
+//             const update = new Array
+//             for (let attr in element) update.push(`${attr} = '${JSON.stringify(element[attr])}'`)
+
+//             this.db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,)
+//         })
+
+//         this.db.close()
+//     }
+
+//     delete(target, id) {
+//         this.#open()
+
+//         this.db.serialize(() => {
+//             this.db.run(`DELETE FROM ${target} WHERE id = ${id}`)
+//         })
+
+//         this.db.close()
+//     }
 }
