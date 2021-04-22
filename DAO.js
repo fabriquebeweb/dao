@@ -52,15 +52,15 @@ class DAO {
 }
 
 exports.MongoDB = class MongoDB extends DAO {
-    #MongoClient
+    #MongoDB
 
     constructor(db_path) {
         super(db_path)
-        this.#MongoClient = require('mongodb').MongoClient
+        this.#MongoDB = require('mongodb').MongoClient
     }
 
     #connect(callback) {
-        this.#MongoClient.connect(this.db_path, function(error, client) {
+        this.#MongoDB.connect(this.db_path, function(error, client) {
             if (error) throw error
             callback(client.db())
             client.close()
@@ -135,121 +135,109 @@ exports.SQLite = class SQLite extends DAO {
         this.#SQLite = require('sqlite3')
     }
 
-    #open() {
+    #connect(callback) {
         this.db = new this.#SQLite.Database(this.db_path)
+        callback(this.db)
+        this.db.close()
     }
 
     seed(target, elements) {
-        this.#open()
+        this.#connect(db => {
+            db.serialize(() => {
+                db.run(
+                    `DROP TABLE if exists ${target}`,
+                    (error) => { if (error) throw error }
+                )
+    
+                const attributes = new Array
+                elements.forEach((element) => {
+                    for (let attribute in element) if (!attributes.includes(attribute)) attributes.push(attribute)
+                })
+    
+                const seed = ['']
+                attributes.forEach(attribute => seed.push(`${attribute} TEXT`))
 
-        this.db.serialize(() => {
-            this.db.run(
-                `DROP TABLE if exists ${target}`,
-                (error) => { if (error) throw error }
-            )
+                db.run(
+                    `CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
+                    (error) => { if (error) throw error }
+                )
+                
+                elements.forEach((element) => {
+                    let values = new Array
+                    attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+                    db.run(
+                        `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                        (error) => { if (error) throw error }
+                    )
+                })
+            })    
+        })
+    }
 
-            const attributes = new Array
-            elements.forEach((element) => {
-                for (let attribute in element) if (!attributes.includes(attribute)) attributes.push(attribute)
-            })
-
-            const seed = ['']
-            attributes.forEach(attribute => seed.push(`${attribute} TEXT`))
-
-            this.db.run(
-                `CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
-                (error) => { if (error) throw error }
-            )
-            
-            elements.forEach((element) => {
-                let values = new Array
+    create(target, element) {
+        this.#connect(db => {
+            db.serialize(() => {
+                const attributes = new Array
+                for (let attribute in element) attributes.push(attribute)
+    
+                const values = new Array
                 attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
-
-                this.db.run(
+    
+                db.run(
                     `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                    (error) => { if (error) throw error }
+                )
+            })    
+        })
+    }
+
+    getAll(target, callback) {
+        this.#connect(db => {
+            db.serialize(() => {
+                db.all(`SELECT * FROM ${target}`, (error, results) => {
+                    if (error) throw error
+                    results.forEach(result => {
+                        for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                    })
+                    callback(results)
+                })
+            })
+        })
+    }
+
+    getById(target, id, callback) {
+        this.#connect(db => {
+            db.serialize(() => {
+                db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (error, result) => {
+                    if (error) throw error
+                    for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                    callback(result)
+                })
+            })    
+        })
+    }
+
+    update(target, element) {
+        this.#connect(db => {
+            db.serialize(() => {
+                const update = new Array
+                for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
+                db.run(
+                    `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
+                    (error) => { if (error) throw error }
+                )
+            })    
+        })
+    }
+
+    delete(target, id) {
+        this.#connect(db => {
+            db.serialize(() => {
+                db.run(
+                    `DELETE FROM ${target} WHERE id = ${id}`,
                     (error) => { if (error) throw error }
                 )
             })
         })
-
-        this.db.close()
-    }
-
-    create(target, element) {
-        this.#open()
-
-        this.db.serialize(() => {
-            const attributes = new Array
-            for (let attribute in element) attributes.push(attribute)
-
-            const values = new Array
-            attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
-
-            this.db.run(
-                `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
-                (error) => { if (error) throw error }
-            )
-        })
-
-        this.db.close()
-    }
-
-    getAll(target, callback) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.all(`SELECT * FROM ${target}`, (error, results) => {
-                if (error) throw error
-                results.forEach(result => {
-                    for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
-                })
-                callback(results)
-            })
-        })
-
-        this.db.close()
-    }
-
-    getById(target, id, callback) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (error, result) => {
-                if (error) throw error
-                for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
-                callback(result)
-            })
-        })
-
-        this.db.close()
-    }
-
-    update(target, element) {
-        this.#open()
-
-        this.db.serialize(() => {
-            const update = new Array
-            for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
-
-            this.db.run(
-                `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
-                (error) => { if (error) throw error }
-            )
-        })
-
-        this.db.close()
-    }
-
-    delete(target, id) {
-        this.#open()
-
-        this.db.serialize(() => {
-            this.db.run(
-                `DELETE FROM ${target} WHERE id = ${id}`,
-                (error) => { if (error) throw error }
-            )
-        })
-
-        this.db.close()
     }
 }
