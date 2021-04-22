@@ -1,20 +1,36 @@
 {
-  "name": "derrieuxanalodor",
+  "name": "@beweb/dao",
   "version": "1.0.0",
-  "description": "Le Data Access Object pour les crades",
-  "main": "DAO.js",
-  "scripts": {
-    "watch": "nodemon DAO.js"
+  "private": false,
+  "description": "Le Data Access Object pour les nuls !",
+  "main": "script.js",
+  "exports": {
+    ".": "./script.js"
   },
-  "author": "Les 4 Fantastiques",
-  "license": "ISC",
+  "author": "Fondespierre <siege.castries@fondespierre.com>",
+  "contributors": [
+    "Raphaël Cima <atlasrw@icloud.com>",
+    "Valentin Creuillenet <valentincreuillenet@hotmail.fr>",
+    "Yohan Beneito <y.beneito@gmail.com>",
+    "Sidney Carlos <sidney.carlos1@gmail.com>"
+  ],
+  "repository": "gitlab:dwwm_mtp_03/beweb-dao",
+  "homepage": "https://fondespierre.com",
+  "license": "MIT",
   "dependencies": {
     "dotenv": "^8.2.0",
     "mongodb": "^3.6.6",
     "redis": "^3.1.2",
     "sqlite3": "^5.0.2"
   },
-  "devDependencies": {
-    "nodemon": "^2.0.7"
-  }
+  "keywords": [
+    "beweb",
+    "dao",
+    "database",
+    "data",
+    "object",
+    "mongodb",
+    "sqlite",
+    "redis"
+  ]
 }

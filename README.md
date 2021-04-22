@@ -4,10 +4,14 @@ Le Data Access Object (DAO) est un modèle de programmation qui permet à un ser
 Lorsque le serveur reçoit des requêtes, le DAO s'occupe de les traduire avant de les envoyer au bon format, peu importe la DB choisie.
 
 # INSTALLATION
-- Import de la librairie (chemin vers le fichier `DAO.js`)
-
-`const DAO = require('path/to/DAO')`
-
+- Installation de la librairie via `npm`
+```bash
+$ npm install @beweb/dao
+```
+- Import de la librairie
+```js
+const DAO = require('@beweb/dao')
+```
 - Instanciation d'une nouvelle DB dans une variable (chemin vers la DB)
 
 SQLite
