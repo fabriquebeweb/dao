@@ -8,8 +8,9 @@ class DAO {
 
     /**
      * Cette méthode ouvre une connection entre l'objet et la BDD
+     * @param {*} callback Traitement à effectuer
      */
-    #open() {}
+    #connect(callback) {}
 
     /**
      * Inssèrt un élément dans une table/collection
@@ -126,7 +127,6 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 }
 
-
 exports.SQLite = class SQLite extends DAO {
     #SQLite
 
@@ -238,6 +238,80 @@ exports.SQLite = class SQLite extends DAO {
                     (error) => { if (error) throw error }
                 )
             })
+        })
+    }
+}
+
+exports.Redis = class Redis extends DAO {
+    #Redis
+
+    constructor(db_path) {
+        super(db_path)
+        this.#Redis = require('redis')
+    }
+
+    #connect(callback) {
+        this.db = this.#Redis.createClient(this.db_path)
+        this.db.on('error', error => { throw error })
+        callback(this.db)
+        this.db.quit()
+    }
+
+    seed(target, elements) {
+        this.#connect(db => {
+            elements.forEach((element, i) => { element.id = i })
+            db.set(target, JSON.stringify(elements))    
+        })
+    }
+
+    create(target, element) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                element.id = Math.max(...elements.map(obj => obj.id)) + 1
+                elements.push(element)
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
+        })
+    }
+
+    getAll(target, callback) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                callback(JSON.parse(result))
+            })
+        })
+    }
+
+    getById(target, id, callback) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                callback(JSON.parse(result).find(obj => obj.id === id))
+            })    
+        })
+    }
+
+    update(target, element) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                let e = elements.find(obj => obj.id === element.id)
+                elements[elements.indexOf(e)] = element
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
+        })
+    }
+
+    delete(target, id) {
+        this.#connect(db => {
+            db.get(target, (error, result) => {
+                const elements = JSON.parse(result)
+                elements.splice(elements.indexOf(elements.find(obj => obj.id === id)), 1)
+    
+                this.#connect(db => db.set(target, JSON.stringify(elements)))
+            })    
         })
     }
 }
