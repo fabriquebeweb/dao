@@ -8,45 +8,53 @@ class DAO {
 
     /**
      * Cette méthode ouvre une connection entre l'objet et la BDD
-     * @param {*} callback Traitement à effectuer
+     * @param {*} callback Traitement à effectuer après la connection à la BDD
      */
     #connect(callback) {}
 
     /**
-     * Inssèrt un élément dans une table/collection
-     * @param {*} target La table/collection dans laquelle insérer l'élément
+     * Réinitialise une table/collection/clé
+     * @param {*} target La table/collection/clé à réinitialiser
+     * @param {*} elements Les éléments a insérer
+     * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
+     */
+    seed(target, elements, callback) {}
+
+    /**
+     * Insère un élément dans une table/collection/clé
+     * @param {*} target La table/collection/clé dans laquelle insérer l'élément
      * @param {*} element L'élément a insérer
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
     create(target, element, callback) {}
 
     /**
-     * Récupère tout les éléments d'une table/collection
-     * @param {*} target La table/collection à récupérer
+     * Récupère tout les éléments d'une table/collection/clé
+     * @param {*} target La table/collection/clé à récupérer
      * @param {*} callback Le traitement a effectuer sur la donnée
      */
     getAll(target, callback) {}
 
     /**
-     * Récupère un élément d'une table/collection par son ID
-     * @param {*} target La table/collection dans laquelle récuperer l'élément
+     * Récupère un élément d'une table/collection/clé par son ID
+     * @param {*} target La table/collection/clé dans laquelle récuperer l'élément
      * @param {*} id L'ID de l'élément a récupérer
      * @param {*} callback Le traitement a effectuer sur l'élément
      */
     getById(target, id, callback) {}
 
     /**
-     * Met à a jour un élément dans une table/collection
-     * @param {*} target La table/collection de l'élément a mettre à jour
+     * Met à a jour un élément dans une table/collection/clé
+     * @param {*} target La table/collection/clé de l'élément a mettre à jour
      * @param {*} element L'élément à mettre a jour
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
     update(target, element, callback) {}
 
     /**
-     * Supprime un élément d'une table/collection
-     * @param {*} target La table/collection dans laquelle supprimer l'élément
-     * @param {*} id L'id de l'élément a a supprimer
+     * Supprime un élément d'une table/collection/clé
+     * @param {*} target La table/collection/clé dans laquelle supprimer l'élément
+     * @param {*} id L'ID de l'élément a a supprimer
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
     delete(target, id, callback) {}
