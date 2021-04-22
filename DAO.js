@@ -62,9 +62,22 @@ exports.MongoDB = class MongoDB extends DAO {
 
     #connect(callback) {
         this.#MongoDB.connect(this.db_path, function(error, client) {
+            const { ObjectId } = require('bson')
             if (error) throw error
-            callback(client.db())
+            callback(client.db(), ObjectId)
             client.close()
+        })
+    }
+    
+    seed(target, elements, callback) {
+        this.#connect(db => {
+            db.collection(target).remove()
+            elements.forEach((element) => {
+                db.collection(target).insertOne(element, function(error, res){
+                    if (error) throw error
+                    if (callback) callback(res)
+                })    
+            })
         })
     }
 
@@ -81,27 +94,26 @@ exports.MongoDB = class MongoDB extends DAO {
         this.#connect(db => {
             db.collection(target).find().toArray(function(error, docs) {
                 if (error) throw error
+                docs.forEach(doc => { doc.id = doc._id; delete doc._id })
                 callback(docs)
             })
         })
     }
 
     getById(target, id, callback) {
-        let { ObjectId } = require('bson');
-
-        this.#connect(db => {
-            db.collection(target).findOne({ "_id" : ObjectId(id) }, function(error, doc) {
+        this.#connect((db, parse) => {
+            db.collection(target).findOne({ "_id" : parse(id) }, function(error, doc) {
                 if (error) throw error
+                doc.id = doc._id; delete doc._id    
                 callback(doc)
             })
         })
     }
 
-    update(target,element,callback) {
-        let { ObjectId } = require('bson')
-
-        this.#connect(db => {
-            let query = { "_id" : ObjectId(element._id)}
+    update(target, element, callback) {
+        this.#connect((db, parse) => {
+            element._id = element.id; delete element.id
+            let query = { "_id" : parse(element._id)}
             let new_element = {}            
             new_element =  Object.assign(new_element, element)
             delete new_element["_id"]
@@ -116,10 +128,8 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 
     delete(target, id, callback){
-        let { ObjectId } = require('bson');
-
-        this.#connect(db => {
-            db.collection(target).deleteOne({ "_id" : ObjectId(id)}, function(error, res){
+        this.#connect((db, parse) => {
+            db.collection(target).deleteOne({ "_id" : parse(id)}, function(error, res){
                 if (error) throw error
                 if (callback) callback(res)
             })
@@ -270,7 +280,7 @@ exports.Redis = class Redis extends DAO {
                 const elements = JSON.parse(result)
                 element.id = Math.max(...elements.map(obj => obj.id)) + 1
                 elements.push(element)
-    
+
                 this.#connect(db => db.set(target, JSON.stringify(elements)))
             })    
         })
