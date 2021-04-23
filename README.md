@@ -69,13 +69,10 @@ db.delete('example', element.id)
 ```js
 db.seed('example', elements)
 ```
+- `path` représente le chemin de la DB fournie
+> **ATTENTION** modifier le `path` peut être dangereux pour l'intégrité des données
+```js
+db.path = './databases/new.db'
+```
 
 > Toutes les méthodes peuvent prendre une fonction de `callback` en dernier paramètre pour pouvoir gérer les réponses des requêtes, et les erreurs peuvent être gérées avec `try` et `catch`
-
-# CONVENTIONS
-- 1 Feature = 1 Branche = 1 Merge Request
-- Méthodes = camelCase
-- Variable = snake_case
-- Commit & Branches = EN
-- Documentation = FR
-- Requêtes SQL en majuscules

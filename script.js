@@ -1,9 +1,9 @@
 require('dotenv').config({ path : './env' })
 
 class DAO {
-    constructor (db_path) {
-        this.db_path = db_path
-        if (this.constructor === DAO) throw new TypeError('Une Classe abstraite ne peut pas être instanciée')
+    constructor (path) {
+        this.path = path
+        if (this.constructor === DAO) throw new TypeError('Abstract Classes cannot be instantiated')
     }
 
     /**
@@ -63,13 +63,13 @@ class DAO {
 exports.MongoDB = class MongoDB extends DAO {
     #MongoDB
 
-    constructor(db_path) {
-        super(db_path)
+    constructor(path) {
+        super(path)
         this.#MongoDB = require('mongodb').MongoClient
     }
 
     #connect(callback) {
-        this.#MongoDB.connect(this.db_path, function(error, client) {
+        this.#MongoDB.connect(this.path, function(error, client) {
             const { ObjectId } = require('bson')
             if (error) throw error
             callback(client.db(), ObjectId)
@@ -148,13 +148,13 @@ exports.MongoDB = class MongoDB extends DAO {
 exports.SQLite = class SQLite extends DAO {
     #SQLite
 
-    constructor(db_path) {
-        super(db_path)
+    constructor(path) {
+        super(path)
         this.#SQLite = require('sqlite3')
     }
 
     #connect(callback) {
-        this.db = new this.#SQLite.Database(this.db_path)
+        this.db = new this.#SQLite.Database(this.path)
         callback(this.db)
         this.db.close()
     }
@@ -263,13 +263,13 @@ exports.SQLite = class SQLite extends DAO {
 exports.Redis = class Redis extends DAO {
     #Redis
 
-    constructor(db_path) {
-        super(db_path)
+    constructor(path) {
+        super(path)
         this.#Redis = require('redis')
     }
 
     #connect(callback) {
-        this.db = this.#Redis.createClient(this.db_path)
+        this.db = this.#Redis.createClient(this.path)
         this.db.on('error', error => { throw error })
         callback(this.db)
         this.db.quit()
