@@ -1,9 +1,9 @@
 {
   "name": "@beweb/dao",
-  "version": "1.0.0",
-  "private": false,
+  "version": "1.0.1",
   "description": "Le Data Access Object pour les nuls !",
   "main": "script.js",
+  "private": false,
   "exports": {
     ".": "./script.js"
   },
