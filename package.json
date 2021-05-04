@@ -1,6 +1,6 @@
 {
   "name": "@beweb/dao",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Le Data Access Object pour les nuls !",
   "main": "script.js",
   "private": false,
@@ -9,12 +9,12 @@
   },
   "author": "Fondespierre <siege.castries@fondespierre.com>",
   "contributors": [
-    "Raphaël Cima <atlasrw@icloud.com>",
+    "Raphaël Warwick <atlasrw@icloud.com>",
     "Valentin Creuillenet <valentincreuillenet@hotmail.fr>",
     "Yohan Beneito <y.beneito@gmail.com>",
     "Sidney Carlos <sidney.carlos1@gmail.com>"
   ],
-  "repository": "gitlab:dwwm_mtp_03/beweb-dao",
+  "repository": "github:fabriquebeweb/dao",
   "homepage": "https://fondespierre.com",
   "license": "MIT",
   "dependencies": {
