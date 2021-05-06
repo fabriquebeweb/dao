@@ -1,5 +1,3 @@
-require('dotenv').config({ path : './env' })
-
 class DAO {
     constructor (path) {
         this.path = path
@@ -145,6 +143,111 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 }
 
+exports.MySQL = class MySQL extends DAO {
+    #MySQL
+
+    constructor(path) {
+        super(path)
+        this.#MySQL = require('mysql')
+    }
+
+    #connect(callback) {
+        this.db = this.#MySQL.createConnection(this.path)
+        callback(this.db)
+        this.db.end()
+    }
+
+    seed(target, elements, callback) {
+        this.#connect(db => {
+            db.query(
+                `DROP TABLE IF EXISTS ${target}`,
+                (error) => { if (error) throw error }
+            )
+
+            const attributes = new Array
+            elements.forEach((element) => {
+                for (let attribute in element) if (!attributes.includes(attribute)) attributes.push(attribute)
+            })
+
+            const seed = ['']
+            attributes.forEach(attribute => seed.push(`${attribute} TEXT`))
+
+            db.query(
+                `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER AUTO_INCREMENT${seed.join(',')}, PRIMARY KEY (id))`,
+                (error) => { if (error) throw error }
+            )
+            
+            elements.forEach((element) => {
+                let values = new Array
+                attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+                db.query(
+                    `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
+                    (error) => { if (error) throw error }
+                )
+            })
+        })
+    }
+
+    create(target, element) {
+        this.#connect(db => {
+            const attributes = new Array
+            for (let attribute in element) attributes.push(attribute)
+
+            const values = new Array
+            attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+
+            db.query(
+                `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
+                (error) => { if (error) throw error }
+            )
+        })
+    }
+
+    getAll(target, callback) {
+        this.#connect(db => {
+            db.query(`SELECT * FROM ${target}`, (error, rows) => {
+                if (error) throw error
+                let results = JSON.parse(JSON.stringify(rows))
+                results.forEach(result => {
+                    for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                })
+                callback(results)
+            })
+        })
+    }
+
+    getById(target, id, callback) {
+        this.#connect(db => {
+            db.query(`SELECT * FROM ${target} WHERE id = ${id} LIMIT 1`, (error, rows) => {
+                if (error) throw error
+                let result = JSON.parse(JSON.stringify(rows[0]))
+                for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
+                callback(result)
+            })
+        })
+    }
+
+    update(target, element) {
+        this.#connect(db => {
+            const update = new Array
+            for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
+            db.query(
+                `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
+                (error) => { if (error) throw error }
+            )
+        })
+    }
+
+    delete(target, id) {
+        this.#connect(db => {
+            db.query(
+                `DELETE FROM ${target} WHERE id = ${id}`,
+                (error) => { if (error) throw error }
+            )
+        })
+    }
+}
+
 exports.SQLite = class SQLite extends DAO {
     #SQLite
 
@@ -163,7 +266,7 @@ exports.SQLite = class SQLite extends DAO {
         this.#connect(db => {
             db.serialize(() => {
                 db.run(
-                    `DROP TABLE if exists ${target}`,
+                    `DROP TABLE IF EXISTS ${target}`,
                     (error) => { if (error) throw error }
                 )
     
@@ -176,7 +279,7 @@ exports.SQLite = class SQLite extends DAO {
                 attributes.forEach(attribute => seed.push(`${attribute} TEXT`))
 
                 db.run(
-                    `CREATE TABLE if not exists ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
+                    `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
                     (error) => { if (error) throw error }
                 )
                 
@@ -184,7 +287,7 @@ exports.SQLite = class SQLite extends DAO {
                     let values = new Array
                     attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
                     db.run(
-                        `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                        `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
                         (error) => { if (error) throw error }
                     )
                 })
@@ -202,7 +305,7 @@ exports.SQLite = class SQLite extends DAO {
                 attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
     
                 db.run(
-                    `INSERT INTO ${target} (${attributes.join(',')}) values(${values.join(',')})`,
+                    `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
                     (error) => { if (error) throw error }
                 )
             })    
