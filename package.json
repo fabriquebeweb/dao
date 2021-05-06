@@ -18,8 +18,8 @@
   "homepage": "https://fondespierre.com",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^8.2.0",
     "mongodb": "^3.6.6",
+    "mysql": "^2.18.1",
     "redis": "^3.1.2",
     "sqlite3": "^5.0.2"
   },
