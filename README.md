@@ -18,15 +18,19 @@ const DAO = require('@beweb/dao')
 
 SQLite
 ```js
-const db = new DAO.SQLite('/path/to/database')
+const db = new DAO.SQLite('/uri/of/database')
+```
+MySQL
+```js
+const db = new DAO.MySQL('/uri/of/database')
 ```
 MongoDB
 ```js
-const db = new DAO.MongoDB('/path/to/database')
+const db = new DAO.MongoDB('/uri/of/database')
 ```
 Redis
 ```js
-const db = new DAO.Redis('/path/to/database')
+const db = new DAO.Redis('/uri/of/database')
 ```
 # UTILISATION
 

@@ -1,6 +1,6 @@
 {
   "name": "@beweb/dao",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Le Data Access Object pour les nuls !",
   "main": "script.js",
   "private": false,
@@ -30,6 +30,7 @@
     "data",
     "object",
     "mongodb",
+    "mysql",
     "sqlite",
     "redis"
   ]
