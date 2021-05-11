@@ -1,14 +1,9 @@
-class DAO {
-    constructor (path) {
-        this.path = path
-        if (this.constructor === DAO) throw new TypeError('Abstract Classes cannot be instantiated')
-    }
+type id = number | string
+type callback = (...arg: any) => void
+type dataElement = { id?: id, _id?: id, [key: string]: any}
 
-    /**
-     * Cette méthode ouvre une connection entre l'objet et la BDD
-     * @param {*} callback Traitement à effectuer après la connection à la BDD
-     */
-    #connect(callback) {}
+interface DAO {
+    path: string
 
     /**
      * Réinitialise une table/collection/clé
@@ -16,7 +11,7 @@ class DAO {
      * @param {*} elements Les éléments a insérer
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
-    seed(target, elements, callback) {}
+    seed: (target: string, elements: dataElement[], callback?: callback) => void
 
     /**
      * Insère un élément dans une table/collection/clé
@@ -24,14 +19,14 @@ class DAO {
      * @param {*} element L'élément a insérer
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
-    create(target, element, callback) {}
+    create: (target: string, element: dataElement, callback?: callback) => void
 
     /**
      * Récupère tout les éléments d'une table/collection/clé
      * @param {*} target La table/collection/clé à récupérer
      * @param {*} callback Le traitement a effectuer sur la donnée
      */
-    getAll(target, callback) {}
+    getAll: (target: string, callback: callback) => void
 
     /**
      * Récupère un élément d'une table/collection/clé par son ID
@@ -39,7 +34,7 @@ class DAO {
      * @param {*} id L'ID de l'élément a récupérer
      * @param {*} callback Le traitement a effectuer sur l'élément
      */
-    getById(target, id, callback) {}
+    getById: (target: string, id: id, callback: callback) => void
 
     /**
      * Met à a jour un élément dans une table/collection/clé
@@ -47,7 +42,7 @@ class DAO {
      * @param {*} element L'élément à mettre a jour
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
-    update(target, element, callback) {}
+    update: (target: string, element: dataElement, callback?: callback) => void
 
     /**
      * Supprime un élément d'une table/collection/clé
@@ -55,19 +50,20 @@ class DAO {
      * @param {*} id L'ID de l'élément a a supprimer
      * @param {*} callback Traitement à effectuer sur le message d'erreur (facultatif)
      */
-    delete(target, id, callback) {}
+    delete: (target: string, id: id, callback?: callback) => void
 }
 
-exports.MongoDB = class MongoDB extends DAO {
-    #MongoDB
+exports.MongoDB = class MongoDB implements DAO {
+    private client: any
+    path: string
 
-    constructor(path) {
-        super(path)
-        this.#MongoDB = require('mongodb').MongoClient
+    constructor(path: string) {
+        this.client = require('mongodb').MongoClient
+        this.path = path
     }
 
-    #connect(callback) {
-        this.#MongoDB.connect(this.path, function(error, client) {
+    private connect(callback: callback) : void {
+        this.client.connect(this.path, (error: any, client: any) => {
             const { ObjectId } = require('bson')
             if (error) throw error
             callback(client.db(), ObjectId)
@@ -75,11 +71,11 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
     
-    seed(target, elements, callback) {
-        this.#connect(db => {
+    seed(target: string, elements: dataElement[], callback?: callback) : void {
+        this.connect(db => {
             db.collection(target).remove()
             elements.forEach((element) => {
-                db.collection(target).insertOne(element, function(error, res){
+                db.collection(target).insertOne(element, (error: any, res: any) => {
                     if (error) throw error
                     if (callback) callback(res)
                 })    
@@ -87,18 +83,18 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-    create(target, element, callback) {
-        this.#connect(db => {
-            db.collection(target).insertOne(element, function(error, res){
+    create(target: string, element: dataElement, callback?: callback) : void {
+        this.connect(db => {
+            db.collection(target).insertOne(element, (error: any, res: any) => {
                 if (error) throw error
                 if (callback) callback(res)
             })
         })
     }
 
-    getAll(target, callback) {
-        this.#connect(db => {
-            db.collection(target).find().toArray(function(error, docs) {
+    getAll(target: string, callback: callback) : void {
+        this.connect(db => {
+            db.collection(target).find().toArray((error: any, docs: dataElement[]) => {
                 if (error) throw error
                 docs.forEach(doc => { doc.id = doc._id; delete doc._id })
                 callback(docs)
@@ -106,9 +102,9 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-    getById(target, id, callback) {
-        this.#connect((db, parse) => {
-            db.collection(target).findOne({ "_id" : parse(id) }, function(error, doc) {
+    getById(target: string, id: id, callback: callback) : void {
+        this.connect((db, parse) => {
+            db.collection(target).findOne({ "_id" : parse(id) }, (error: any, doc: dataElement) => {
                 if (error) throw error
                 doc.id = doc._id; delete doc._id    
                 callback(doc)
@@ -116,26 +112,26 @@ exports.MongoDB = class MongoDB extends DAO {
         })
     }
 
-    update(target, element, callback) {
-        this.#connect((db, parse) => {
+    update(target: string, element: dataElement, callback?: callback) : void {
+        this.connect((db, parse) => {
             element._id = element.id; delete element.id
             let query = { "_id" : parse(element._id)}
-            let new_element = {}            
-            new_element =  Object.assign(new_element, element)
+            let new_element: dataElement = {}            
+            new_element = Object.assign(new_element, element)
             delete new_element["_id"]
 
             let new_values = {$set : new_element}
             
-            db.collection(target).updateOne(query, new_values, function(error, res) {
+            db.collection(target).updateOne(query, new_values, (error: any, res: any) => {
                 if(error) throw error
                 if (callback) callback(res)
             })
         })
     }
 
-    delete(target, id, callback){
-        this.#connect((db, parse) => {
-            db.collection(target).deleteOne({ "_id" : parse(id)}, function(error, res){
+    delete(target: string, id: id, callback?: callback){
+        this.connect((db, parse) => {
+            db.collection(target).deleteOne({ "_id" : parse(id)}, function(error: any, res: any){
                 if (error) throw error
                 if (callback) callback(res)
             })
@@ -143,25 +139,27 @@ exports.MongoDB = class MongoDB extends DAO {
     }
 }
 
-exports.MySQL = class MySQL extends DAO {
-    #MySQL
+exports.MySQL = class MySQL implements DAO {
+    private client: any
+    private db: any
+    path: string
 
-    constructor(path) {
-        super(path)
-        this.#MySQL = require('mysql')
+    constructor(path: string) {
+        this.client = require('mysql')
+        this.path = path
     }
 
-    #connect(callback) {
-        this.db = this.#MySQL.createConnection(this.path)
+    private connect(callback: callback) : void {
+        this.db = this.client.createConnection(this.path)
         callback(this.db)
         this.db.end()
     }
 
-    seed(target, elements, callback) {
-        this.#connect(db => {
+    seed(target: string, elements: dataElement[], callback?: callback) : void {
+        this.connect(db => {
             db.query(
                 `DROP TABLE IF EXISTS ${target}`,
-                (error) => { if (error) throw error }
+                (error: any) => { if (error) throw error }
             )
 
             const attributes = new Array
@@ -174,22 +172,22 @@ exports.MySQL = class MySQL extends DAO {
 
             db.query(
                 `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER AUTO_INCREMENT${seed.join(',')}, PRIMARY KEY (id))`,
-                (error) => { if (error) throw error }
+                (error: any) => { if (error) throw error }
             )
             
             elements.forEach((element) => {
                 let values = new Array
-                attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
+                attributes.forEach((attribute: number) => values.push(`'${JSON.stringify(element[attribute])}'`))
                 db.query(
                     `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
             })
         })
     }
 
-    create(target, element) {
-        this.#connect(db => {
+    create(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
             const attributes = new Array
             for (let attribute in element) attributes.push(attribute)
 
@@ -198,17 +196,17 @@ exports.MySQL = class MySQL extends DAO {
 
             db.query(
                 `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                (error) => { if (error) throw error }
+                (error: any) => { if (error) throw error }
             )
         })
     }
 
-    getAll(target, callback) {
-        this.#connect(db => {
-            db.query(`SELECT * FROM ${target}`, (error, rows) => {
+    getAll(target: string, callback: callback) : void {
+        this.connect(db => {
+            db.query(`SELECT * FROM ${target}`, (error: any, rows: any) => {
                 if (error) throw error
                 let results = JSON.parse(JSON.stringify(rows))
-                results.forEach(result => {
+                results.forEach((result: any) => {
                     for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
                 })
                 callback(results)
@@ -216,9 +214,9 @@ exports.MySQL = class MySQL extends DAO {
         })
     }
 
-    getById(target, id, callback) {
-        this.#connect(db => {
-            db.query(`SELECT * FROM ${target} WHERE id = ${id} LIMIT 1`, (error, rows) => {
+    getById(target: string, id: id, callback: callback) : void {
+        this.connect(db => {
+            db.query(`SELECT * FROM ${target} WHERE id = ${id} LIMIT 1`, (error: any, rows: any) => {
                 if (error) throw error
                 let result = JSON.parse(JSON.stringify(rows[0]))
                 for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
@@ -227,47 +225,49 @@ exports.MySQL = class MySQL extends DAO {
         })
     }
 
-    update(target, element) {
-        this.#connect(db => {
+    update(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
             const update = new Array
             for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
             db.query(
                 `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
-                (error) => { if (error) throw error }
+                (error: any) => { if (error) throw error }
             )
         })
     }
 
-    delete(target, id) {
-        this.#connect(db => {
+    delete(target: string, id: id, callback?: callback) {
+        this.connect(db => {
             db.query(
                 `DELETE FROM ${target} WHERE id = ${id}`,
-                (error) => { if (error) throw error }
+                (error: any) => { if (error) throw error }
             )
         })
     }
 }
 
-exports.SQLite = class SQLite extends DAO {
-    #SQLite
+exports.SQLite = class SQLite implements DAO {
+    private client: any
+    private db: any
+    path: string
 
-    constructor(path) {
-        super(path)
-        this.#SQLite = require('sqlite3')
+    constructor(path: string) {
+        this.client = require('sqlite3')
+        this.path = path
     }
 
-    #connect(callback) {
-        this.db = new this.#SQLite.Database(this.path)
+    connect(callback: callback) : void {
+        this.db = new this.client.Database(this.path)
         callback(this.db)
         this.db.close()
     }
 
-    seed(target, elements) {
-        this.#connect(db => {
+    seed(target: string, elements: dataElement[], callback?: callback) {
+        this.connect(db => {
             db.serialize(() => {
                 db.run(
                     `DROP TABLE IF EXISTS ${target}`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
     
                 const attributes = new Array
@@ -280,7 +280,7 @@ exports.SQLite = class SQLite extends DAO {
 
                 db.run(
                     `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
                 
                 elements.forEach((element) => {
@@ -288,15 +288,15 @@ exports.SQLite = class SQLite extends DAO {
                     attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
                     db.run(
                         `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                        (error) => { if (error) throw error }
+                        (error: any) => { if (error) throw error }
                     )
                 })
             })    
         })
     }
 
-    create(target, element) {
-        this.#connect(db => {
+    create(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
             db.serialize(() => {
                 const attributes = new Array
                 for (let attribute in element) attributes.push(attribute)
@@ -306,16 +306,16 @@ exports.SQLite = class SQLite extends DAO {
     
                 db.run(
                     `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
             })    
         })
     }
 
-    getAll(target, callback) {
-        this.#connect(db => {
+    getAll(target: string, callback: callback) : void {
+        this.connect(db => {
             db.serialize(() => {
-                db.all(`SELECT * FROM ${target}`, (error, results) => {
+                db.all(`SELECT * FROM ${target}`, (error: any, results: dataElement[]) => {
                     if (error) throw error
                     results.forEach(result => {
                         for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
@@ -326,10 +326,10 @@ exports.SQLite = class SQLite extends DAO {
         })
     }
 
-    getById(target, id, callback) {
-        this.#connect(db => {
+    getById(target: string, id: id, callback: callback) : void {
+        this.connect(db => {
             db.serialize(() => {
-                db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (error, result) => {
+                db.get(`SELECT * FROM ${target} WHERE id = ${id}`, (error: any, result: dataElement) => {
                     if (error) throw error
                     for (let attribute in result) result[attribute] = JSON.parse(result[attribute])
                     callback(result)
@@ -338,100 +338,107 @@ exports.SQLite = class SQLite extends DAO {
         })
     }
 
-    update(target, element) {
-        this.#connect(db => {
+    update(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
             db.serialize(() => {
                 const update = new Array
                 for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
                 db.run(
                     `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
             })    
         })
     }
 
-    delete(target, id) {
-        this.#connect(db => {
+    delete(target: string, id: id, callback?: callback) {
+        this.connect(db => {
             db.serialize(() => {
                 db.run(
                     `DELETE FROM ${target} WHERE id = ${id}`,
-                    (error) => { if (error) throw error }
+                    (error: any) => { if (error) throw error }
                 )
             })
         })
     }
 }
 
-exports.Redis = class Redis extends DAO {
-    #Redis
+exports.Redis = class Redis implements DAO {
+    private client: any
+    private db: any
+    path: string
 
-    constructor(path) {
-        super(path)
-        this.#Redis = require('redis')
+    constructor(path: string) {
+        this.client = require('redis')
+        this.path = path
     }
 
-    #connect(callback) {
-        this.db = this.#Redis.createClient(this.path)
-        this.db.on('error', error => { throw error })
+    connect(callback: callback) : void {
+        this.db = this.client.createClient(this.path)
+        this.db.on('error', (error: any) => { throw error })
         callback(this.db)
         this.db.quit()
     }
 
-    seed(target, elements) {
-        this.#connect(db => {
+    seed(target: string, elements: dataElement[], callback?: callback) {
+        this.connect(db => {
             elements.forEach((element, i) => { element.id = i })
             db.set(target, JSON.stringify(elements))    
         })
     }
 
-    create(target, element) {
-        this.#connect(db => {
-            db.get(target, (error, result) => {
+    create(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
+            db.get(target, (error: any, result: any) => {
+                if (error) throw error
                 const elements = JSON.parse(result)
-                element.id = Math.max(...elements.map(obj => obj.id)) + 1
+                element.id = Math.max(...elements.map((obj: any) => obj.id)) + 1
                 elements.push(element)
 
-                this.#connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => db.set(target, JSON.stringify(elements)))
             })    
         })
     }
 
-    getAll(target, callback) {
-        this.#connect(db => {
-            db.get(target, (error, result) => {
+    getAll(target: string, callback: callback) : void {
+        this.connect(db => {
+            db.get(target, (error: any, result: any) => {
+                if (error) throw error
                 callback(JSON.parse(result))
             })
         })
     }
 
-    getById(target, id, callback) {
-        this.#connect(db => {
-            db.get(target, (error, result) => {
-                callback(JSON.parse(result).find(obj => obj.id === id))
+    getById(target: string, id: id, callback: callback) : void {
+        this.connect(db => {
+            db.get(target, (error: any, result: any) => {
+                if (error) throw error
+                callback(JSON.parse(result).find((obj: any) => obj.id === id))
             })    
         })
     }
 
-    update(target, element) {
-        this.#connect(db => {
-            db.get(target, (error, result) => {
+    update(target: string, element: dataElement, callback?: callback) {
+        this.connect(db => {
+            db.get(target, (error: any, result: any) => {
+                if (error) throw error
                 const elements = JSON.parse(result)
-                let e = elements.find(obj => obj.id === element.id)
+                let e = elements.find((obj: any) => obj.id === element.id)
                 elements[elements.indexOf(e)] = element
     
-                this.#connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => db.set(target, JSON.stringify(elements)))
             })    
         })
     }
 
-    delete(target, id) {
-        this.#connect(db => {
-            db.get(target, (error, result) => {
+    delete(target: string, id: id, callback?: callback) {
+        this.connect(db => {
+            db.get(target, (error: any, result: any) => {
+                if (error) throw error
                 const elements = JSON.parse(result)
-                elements.splice(elements.indexOf(elements.find(obj => obj.id === id)), 1)
+                elements.splice(elements.indexOf(elements.find((obj: any) => obj.id === id)), 1)
     
-                this.#connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => db.set(target, JSON.stringify(elements)))
             })    
         })
     }
