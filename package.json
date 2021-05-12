@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Le Data Access Object pour les nuls !",
   "main": "./dist/script.js",
-  "types" : "./dist/script.d.ts",
+  "types": "./dist/script.d.ts",
   "private": false,
   "exports": {
     ".": "./dist/script.js"
