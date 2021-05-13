@@ -76,7 +76,7 @@ exports.MongoDB = class MongoDB {
     }
     delete(target, id, callback) {
         this.connect((db, parse) => {
-            db.collection(target).deleteOne({ "_id": parse(id) }, function (error, res) {
+            db.collection(target).deleteOne({ "_id": parse(id) }, (error, res) => {
                 if (error)
                     throw error;
                 if (callback)
@@ -97,8 +97,9 @@ exports.MySQL = class MySQL {
     }
     seed(target, elements, callback) {
         this.connect(db => {
-            db.query(`DROP TABLE IF EXISTS ${target}`, (error) => { if (error)
-                throw error; });
+            db.query(`DROP TABLE IF EXISTS ${target}`, (error, res) => { if (error)
+                throw error; if (callback)
+                callback(res); });
             const attributes = new Array;
             elements.forEach((element) => {
                 for (let attribute in element)
@@ -107,13 +108,15 @@ exports.MySQL = class MySQL {
             });
             const seed = [''];
             attributes.forEach(attribute => seed.push(`${attribute} TEXT`));
-            db.query(`CREATE TABLE IF NOT EXISTS ${target} (id INTEGER AUTO_INCREMENT${seed.join(',')}, PRIMARY KEY (id))`, (error) => { if (error)
-                throw error; });
+            db.query(`CREATE TABLE IF NOT EXISTS ${target} (id INTEGER AUTO_INCREMENT${seed.join(',')}, PRIMARY KEY (id))`, (error, res) => { if (error)
+                throw error; if (callback)
+                callback(res); });
             elements.forEach((element) => {
                 let values = new Array;
                 attributes.forEach((attribute) => values.push(`'${JSON.stringify(element[attribute])}'`));
-                db.query(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error) => { if (error)
-                    throw error; });
+                db.query(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error, res) => { if (error)
+                    throw error; if (callback)
+                    callback(res); });
             });
         });
     }
@@ -124,8 +127,9 @@ exports.MySQL = class MySQL {
                 attributes.push(attribute);
             const values = new Array;
             attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`));
-            db.query(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error) => { if (error)
-                throw error; });
+            db.query(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error, res) => { if (error)
+                throw error; if (callback)
+                callback(res); });
         });
     }
     getAll(target, callback) {
@@ -159,14 +163,16 @@ exports.MySQL = class MySQL {
             const update = new Array;
             for (let attribute in element)
                 update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`);
-            db.query(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`, (error) => { if (error)
-                throw error; });
+            db.query(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`, (error, res) => { if (error)
+                throw error; if (callback)
+                callback(res); });
         });
     }
     delete(target, id, callback) {
         this.connect(db => {
-            db.query(`DELETE FROM ${target} WHERE id = ${id}`, (error) => { if (error)
-                throw error; });
+            db.query(`DELETE FROM ${target} WHERE id = ${id}`, (error, res) => { if (error)
+                throw error; if (callback)
+                callback(res); });
         });
     }
 };
@@ -184,7 +190,8 @@ exports.SQLite = class SQLite {
         this.connect(db => {
             db.serialize(() => {
                 db.run(`DROP TABLE IF EXISTS ${target}`, (error) => { if (error)
-                    throw error; });
+                    throw error; if (callback)
+                    callback(error); });
                 const attributes = new Array;
                 elements.forEach((element) => {
                     for (let attribute in element)
@@ -194,12 +201,14 @@ exports.SQLite = class SQLite {
                 const seed = [''];
                 attributes.forEach(attribute => seed.push(`${attribute} TEXT`));
                 db.run(`CREATE TABLE IF NOT EXISTS ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`, (error) => { if (error)
-                    throw error; });
+                    throw error; if (callback)
+                    callback(error); });
                 elements.forEach((element) => {
                     let values = new Array;
                     attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`));
                     db.run(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error) => { if (error)
-                        throw error; });
+                        throw error; if (callback)
+                        callback(error); });
                 });
             });
         });
@@ -213,7 +222,8 @@ exports.SQLite = class SQLite {
                 const values = new Array;
                 attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`));
                 db.run(`INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`, (error) => { if (error)
-                    throw error; });
+                    throw error; if (callback)
+                    callback(error); });
             });
         });
     }
@@ -252,7 +262,8 @@ exports.SQLite = class SQLite {
                 for (let attribute in element)
                     update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`);
                 db.run(`UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`, (error) => { if (error)
-                    throw error; });
+                    throw error; if (callback)
+                    callback(error); });
             });
         });
     }
@@ -260,7 +271,8 @@ exports.SQLite = class SQLite {
         this.connect(db => {
             db.serialize(() => {
                 db.run(`DELETE FROM ${target} WHERE id = ${id}`, (error) => { if (error)
-                    throw error; });
+                    throw error; if (callback)
+                    callback(error); });
             });
         });
     }
@@ -272,12 +284,13 @@ exports.Redis = class Redis {
     }
     connect(callback) {
         this.db = this.client.createClient(this.path);
-        this.db.on('error', (error) => { throw error; });
         callback(this.db);
         this.db.quit();
     }
     seed(target, elements, callback) {
         this.connect(db => {
+            db.on('error', (error) => { if (callback)
+                callback(error); throw error; });
             elements.forEach((element, i) => { element.id = i; });
             db.set(target, JSON.stringify(elements));
         });
@@ -287,10 +300,16 @@ exports.Redis = class Redis {
             db.get(target, (error, result) => {
                 if (error)
                     throw error;
+                if (callback)
+                    callback(error);
                 const elements = JSON.parse(result);
                 element.id = Math.max(...elements.map((obj) => obj.id)) + 1;
                 elements.push(element);
-                this.connect(db => db.set(target, JSON.stringify(elements)));
+                this.connect(db => {
+                    db.on('error', (error) => { if (callback)
+                        callback(error); throw error; });
+                    db.set(target, JSON.stringify(elements));
+                });
             });
         });
     }
@@ -299,6 +318,8 @@ exports.Redis = class Redis {
             db.get(target, (error, result) => {
                 if (error)
                     throw error;
+                if (callback)
+                    callback(error);
                 callback(JSON.parse(result));
             });
         });
@@ -308,6 +329,8 @@ exports.Redis = class Redis {
             db.get(target, (error, result) => {
                 if (error)
                     throw error;
+                if (callback)
+                    callback(error);
                 callback(JSON.parse(result).find((obj) => obj.id === id));
             });
         });
@@ -317,10 +340,16 @@ exports.Redis = class Redis {
             db.get(target, (error, result) => {
                 if (error)
                     throw error;
+                if (callback)
+                    callback(error);
                 const elements = JSON.parse(result);
                 let e = elements.find((obj) => obj.id === element.id);
                 elements[elements.indexOf(e)] = element;
-                this.connect(db => db.set(target, JSON.stringify(elements)));
+                this.connect(db => {
+                    db.on('error', (error) => { if (callback)
+                        callback(error); throw error; });
+                    db.set(target, JSON.stringify(elements));
+                });
             });
         });
     }
@@ -329,9 +358,15 @@ exports.Redis = class Redis {
             db.get(target, (error, result) => {
                 if (error)
                     throw error;
+                if (callback)
+                    callback(error);
                 const elements = JSON.parse(result);
                 elements.splice(elements.indexOf(elements.find((obj) => obj.id === id)), 1);
-                this.connect(db => db.set(target, JSON.stringify(elements)));
+                this.connect(db => {
+                    db.on('error', (error) => { if (callback)
+                        callback(error); throw error; });
+                    db.set(target, JSON.stringify(elements));
+                });
             });
         });
     }

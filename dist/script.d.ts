@@ -3,6 +3,7 @@ declare type callback = (...arg: any) => void;
 declare type dataElement = {
     id?: id;
     _id?: id;
+    [key: string]: any;
 };
 interface DAO {
     path: string;

@@ -131,7 +131,7 @@ exports.MongoDB = class MongoDB implements DAO {
 
     delete(target: string, id: id, callback?: callback){
         this.connect((db, parse) => {
-            db.collection(target).deleteOne({ "_id" : parse(id)}, function(error: any, res: any){
+            db.collection(target).deleteOne({ "_id" : parse(id)}, (error: any, res: any) => {
                 if (error) throw error
                 if (callback) callback(res)
             })
@@ -159,7 +159,7 @@ exports.MySQL = class MySQL implements DAO {
         this.connect(db => {
             db.query(
                 `DROP TABLE IF EXISTS ${target}`,
-                (error: any) => { if (error) throw error }
+                (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
             )
 
             const attributes = new Array
@@ -172,7 +172,7 @@ exports.MySQL = class MySQL implements DAO {
 
             db.query(
                 `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER AUTO_INCREMENT${seed.join(',')}, PRIMARY KEY (id))`,
-                (error: any) => { if (error) throw error }
+                (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
             )
             
             elements.forEach((element) => {
@@ -180,7 +180,7 @@ exports.MySQL = class MySQL implements DAO {
                 attributes.forEach((attribute: number) => values.push(`'${JSON.stringify(element[attribute])}'`))
                 db.query(
                     `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                    (error: any) => { if (error) throw error }
+                    (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
                 )
             })
         })
@@ -196,7 +196,7 @@ exports.MySQL = class MySQL implements DAO {
 
             db.query(
                 `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                (error: any) => { if (error) throw error }
+                (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
             )
         })
     }
@@ -231,7 +231,7 @@ exports.MySQL = class MySQL implements DAO {
             for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
             db.query(
                 `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
-                (error: any) => { if (error) throw error }
+                (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
             )
         })
     }
@@ -240,7 +240,7 @@ exports.MySQL = class MySQL implements DAO {
         this.connect(db => {
             db.query(
                 `DELETE FROM ${target} WHERE id = ${id}`,
-                (error: any) => { if (error) throw error }
+                (error: any, res: any) => { if (error) throw error; if (callback) callback(res) }
             )
         })
     }
@@ -267,7 +267,7 @@ exports.SQLite = class SQLite implements DAO {
             db.serialize(() => {
                 db.run(
                     `DROP TABLE IF EXISTS ${target}`,
-                    (error: any) => { if (error) throw error }
+                    (error: any) => { if (error) throw error; if (callback) callback(error) }
                 )
     
                 const attributes = new Array
@@ -280,7 +280,7 @@ exports.SQLite = class SQLite implements DAO {
 
                 db.run(
                     `CREATE TABLE IF NOT EXISTS ${target} (id INTEGER PRIMARY KEY AUTOINCREMENT${seed.join(',')})`,
-                    (error: any) => { if (error) throw error }
+                    (error: any) => { if (error) throw error; if (callback) callback(error) }
                 )
                 
                 elements.forEach((element) => {
@@ -288,10 +288,10 @@ exports.SQLite = class SQLite implements DAO {
                     attributes.forEach(attribute => values.push(`'${JSON.stringify(element[attribute])}'`))
                     db.run(
                         `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                        (error: any) => { if (error) throw error }
+                        (error: any) => { if (error) throw error; if (callback) callback(error) }
                     )
                 })
-            })    
+            })
         })
     }
 
@@ -306,7 +306,7 @@ exports.SQLite = class SQLite implements DAO {
     
                 db.run(
                     `INSERT INTO ${target} (${attributes.join(',')}) VALUES (${values.join(',')})`,
-                    (error: any) => { if (error) throw error }
+                    (error: any) => { if (error) throw error; if (callback) callback(error) }
                 )
             })    
         })
@@ -345,7 +345,7 @@ exports.SQLite = class SQLite implements DAO {
                 for (let attribute in element) update.push(`${attribute} = '${JSON.stringify(element[attribute])}'`)
                 db.run(
                     `UPDATE ${target} SET ${update.join(', ')} WHERE id = ${element.id}`,
-                    (error: any) => { if (error) throw error }
+                    (error: any) => { if (error) throw error; if (callback) callback(error) }
                 )
             })    
         })
@@ -356,7 +356,7 @@ exports.SQLite = class SQLite implements DAO {
             db.serialize(() => {
                 db.run(
                     `DELETE FROM ${target} WHERE id = ${id}`,
-                    (error: any) => { if (error) throw error }
+                    (error: any) => { if (error) throw error; if (callback) callback(error) }
                 )
             })
         })
@@ -375,27 +375,30 @@ exports.Redis = class Redis implements DAO {
 
     connect(callback: callback) : void {
         this.db = this.client.createClient(this.path)
-        this.db.on('error', (error: any) => { throw error })
         callback(this.db)
         this.db.quit()
     }
 
     seed(target: string, elements: dataElement[], callback?: callback) {
         this.connect(db => {
+            db.on('error', (error: any) => { if (callback) callback(error); throw error })
             elements.forEach((element, i) => { element.id = i })
-            db.set(target, JSON.stringify(elements))    
+            db.set(target, JSON.stringify(elements))
         })
     }
 
     create(target: string, element: dataElement, callback?: callback) {
         this.connect(db => {
             db.get(target, (error: any, result: any) => {
-                if (error) throw error
+                if (error) throw error; if (callback) callback(error)
                 const elements = JSON.parse(result)
                 element.id = Math.max(...elements.map((obj: any) => obj.id)) + 1
                 elements.push(element)
 
-                this.connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => {
+                    db.on('error', (error: any) => { if (callback) callback(error); throw error })
+                    db.set(target, JSON.stringify(elements))
+                })
             })    
         })
     }
@@ -403,7 +406,7 @@ exports.Redis = class Redis implements DAO {
     getAll(target: string, callback: callback) : void {
         this.connect(db => {
             db.get(target, (error: any, result: any) => {
-                if (error) throw error
+                if (error) throw error; if (callback) callback(error)
                 callback(JSON.parse(result))
             })
         })
@@ -412,7 +415,7 @@ exports.Redis = class Redis implements DAO {
     getById(target: string, id: id, callback: callback) : void {
         this.connect(db => {
             db.get(target, (error: any, result: any) => {
-                if (error) throw error
+                if (error) throw error; if (callback) callback(error)
                 callback(JSON.parse(result).find((obj: any) => obj.id === id))
             })    
         })
@@ -421,12 +424,15 @@ exports.Redis = class Redis implements DAO {
     update(target: string, element: dataElement, callback?: callback) {
         this.connect(db => {
             db.get(target, (error: any, result: any) => {
-                if (error) throw error
+                if (error) throw error; if (callback) callback(error)
                 const elements = JSON.parse(result)
                 let e = elements.find((obj: any) => obj.id === element.id)
                 elements[elements.indexOf(e)] = element
     
-                this.connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => {
+                    db.on('error', (error: any) => { if (callback) callback(error); throw error })
+                    db.set(target, JSON.stringify(elements))
+                })
             })    
         })
     }
@@ -434,11 +440,14 @@ exports.Redis = class Redis implements DAO {
     delete(target: string, id: id, callback?: callback) {
         this.connect(db => {
             db.get(target, (error: any, result: any) => {
-                if (error) throw error
+                if (error) throw error; if (callback) callback(error)
                 const elements = JSON.parse(result)
                 elements.splice(elements.indexOf(elements.find((obj: any) => obj.id === id)), 1)
     
-                this.connect(db => db.set(target, JSON.stringify(elements)))
+                this.connect(db => {
+                    db.on('error', (error: any) => { if (callback) callback(error); throw error })
+                    db.set(target, JSON.stringify(elements))
+                })
             })    
         })
     }
