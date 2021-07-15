@@ -1,11 +1,15 @@
 {
   "name": "@beweb/dao",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Le Data Access Object pour les nuls !",
-  "main": "script.js",
+  "main": "./dist/script.js",
+  "types": "./dist/script.d.ts",
   "private": false,
   "exports": {
-    ".": "./script.js"
+    ".": "./dist/script.js"
+  },
+  "scripts": {
+    "build": "tsc"
   },
   "author": "Fondespierre <siege.castries@fondespierre.com>",
   "contributors": [
@@ -18,10 +22,14 @@
   "homepage": "https://fondespierre.com",
   "license": "MIT",
   "dependencies": {
+    "@types/node": "^15.0.2",
     "mongodb": "^3.6.6",
     "mysql": "^2.18.1",
     "redis": "^3.1.2",
     "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.4"
   },
   "keywords": [
     "beweb",
@@ -32,6 +40,7 @@
     "mongodb",
     "mysql",
     "sqlite",
-    "redis"
+    "redis",
+    "typescript"
   ]
 }
