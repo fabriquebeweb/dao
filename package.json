@@ -1,19 +1,26 @@
 {
   "name": "@beweb/dao",
   "version": "2.0.0",
-  "description": "Le Data Access Object pour les nuls !",
-  "main": "./dist/script.js",
-  "types": "./dist/script.d.ts",
+  "description": "Data Access Object for dummies, by dummies",
   "private": false,
+  "main": "index.js",
+  "types": "index.d.ts",
   "exports": {
-    ".": "./dist/script.js"
+    ".": "./index.js",
+    "./mongo": "./lib/mongo.js",
+    "./mysql": "./lib/mysql.js",
+    "./sqlite": "./lib/sqlite.js",
+    "./redis": "./lib/redis.js",
+    "./interface": "./lib/dao.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest",
+    "watch": "tsc --watch"
   },
   "author": "Fondespierre <siege.castries@fondespierre.com>",
   "contributors": [
-    "Raphaël Warwick <atlasrw@icloud.com>",
+    "Raphael Warwick <atlasrw@icloud.com>",
     "Valentin Creuillenet <valentincreuillenet@hotmail.fr>",
     "Yohan Beneito <y.beneito@gmail.com>",
     "Sidney Carlos <sidney.carlos1@gmail.com>"
@@ -22,13 +29,19 @@
   "homepage": "https://fondespierre.com",
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^15.0.2",
-    "mongodb": "^3.6.6",
+    "mongodb": "^4.0.1",
     "mysql": "^2.18.1",
     "redis": "^3.1.2",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^4.2.0"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "@types/mysql": "^2.15.19",
+    "@types/node": "^15.0.2",
+    "@types/redis": "^2.8.31",
+    "@types/sqlite3": "^3.1.7",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.4",
     "typescript": "^4.2.4"
   },
   "keywords": [
