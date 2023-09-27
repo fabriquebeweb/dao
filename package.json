@@ -29,7 +29,7 @@
   "homepage": "https://fondespierre.com",
   "license": "MIT",
   "dependencies": {
-    "mongodb": "^4.0.1",
+    "mongodb": "^4.17.0",
     "mysql": "^2.18.1",
     "redis": "^3.1.2",
     "sqlite3": "^4.2.0"
